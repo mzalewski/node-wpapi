@@ -1,3 +1,56 @@
+OAuth Support
+==========================================
+
+Forked version of node-wpapi, adding experimental support for OAuth.
+Based on https://gist.github.com/kadamwhite/a9a637556e7e94ef249a3167819c4da5 and
+the transport functions in node-wpapi
+
+**Example Usage**
+```js
+
+// Adds a default OAuthHandler to node-wpapi and provides the ability to override
+var WPAPI = require( './wpapi' );
+
+var wp = new WPAPI({
+  endpoint: 'http://site.url/wp-json'
+});
+
+// This function is used to get the verification code (2nd leg in OAuth 1.0A)
+// Could be replaced with something automated using Express etc
+// Currently just opens a local browser instance then prompts for the verification code
+var verifyTokenWithOpn = function(url) {
+  var opn = require( 'opn' );
+  var prompt = require('prompt');
+  opn(url);
+  prompt.start();
+  return new Promise( ( resolve, reject ) => {
+     prompt.get([
+         'verifier'
+     ], ( err, result ) => {
+         if ( err ) {
+             return reject( err );
+         }
+         resolve(result.verifier);
+     });
+  });
+}
+
+// Create an instance of the default/built-in OAuthHandler
+var oAuthHandler = new WPAPI.OAuthHandler(verifyTokenWithOpn);
+// Tell WPAPI to use the new handler
+wp.authHandler(oAuthHandler);
+
+// Set oauth credentials (note: request/access URLs could be obtained from the main endpoint)
+wp.auth({ oauth: { requestUrl:"http://site.url/oauth1/request", accessUrl: "http://site.url/oauth1/access", clientId:'CwQEyK8G9B9yuY', clientSecret:'OfMBix9qzZ6Y6ck9kPKBYc0AlfH7eCoS1iXHHJxpbTQgAg' } });
+
+wp.users().me().context('edit').then(function(d) {
+  console.log("Success");
+}).catch(function(e) {
+   console.log("error");
+});
+
+```
+ 
 A WordPress REST API client for JavaScript
 ==========================================
 
