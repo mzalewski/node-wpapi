@@ -50,7 +50,68 @@ wp.users().me().context('edit').then(function(d) {
 });
 
 ```
- 
+
+**Experimental Express Middleware example**
+```js
+var WPAPI = require( './wpapi' );
+
+var wp = new WPAPI({
+  endpoint: 'http://hotsource.io/wp-json'
+});
+
+// Create basic middleware for express
+var inherits     = require('util').inherits;
+function ExpressOAuthHandler(url) {
+  WPAPI.OAuthHandler.call(this,url);
+  var oauthexpress = require('express');
+  var oauthapp = oauthexpress();
+  var self = this;
+  var storedTokenData = {};
+  oauthapp.use(function(req,res,next) {
+    if (req.query.oauth_verifier) {
+
+      self.verifyRequestToken(storedTokenData,req.query.oauth_verifier).then(function() {
+        next();
+      });
+      return;
+    }
+
+    self.authorizeRequestToken = function(tokenData, url) {
+      storedTokenData = tokenData;
+      res.redirect(url);
+      return Promise.reject(false);
+    };
+    next();
+  });
+  this.express = oauthapp;
+};
+inherits(ExpressOAuthHandler, WPAPI.OAuthHandler);
+
+
+
+var oAuthHandler = new ExpressOAuthHandler("http://localhost:8000/profile");
+wp.authHandler(oAuthHandler);
+wp.auth({ oauth: { requestUrl:"http://hotsource.io/oauth1/request", accessUrl: "http://hotsource.io/oauth1/access", clientId:'GjakV9qlPhzj', clientSecret:'mgIYlH0aVNdzzN4lVteQNOd4Ql0AS8wquCDHwUFXgjx2B5hz' } });
+
+
+var express = require('express');
+
+var app = express();
+app.get('/', function(req, res){
+  res.send('Hello World');
+});
+
+
+app.use('/profile', oAuthHandler.express);
+app.get('/profile', function(req, res){
+
+  wp.users().id(1).context('edit').auth().then(function(d) { res.send(JSON.stringify(d)); });
+});
+
+
+app.listen(8000);
+```
+
 A WordPress REST API client for JavaScript
 ==========================================
 
