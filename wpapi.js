@@ -41,6 +41,9 @@ var WPRequest = require( './lib/constructors/wp-request' );
 // Pull in default HTTP transport
 var httpTransport = require( './lib/http-transport' );
 
+// Pull in default OAuth Handler
+var oauthHandler = require( './lib/oauth-handler' );
+
 /**
  * The base constructor for the WP API service
  *
@@ -175,6 +178,27 @@ WPAPI.prototype.transport = function( transport ) {
  */
 WPAPI.transport = Object.create( httpTransport );
 Object.freeze( WPAPI.transport );
+
+WPAPI.prototype.authHandler = function( handler ) {
+	var _options = this._options;
+	if ( typeof handler === "function" ) {
+		// Use default oAuthHandler with callback
+		_options.authHandler = new WPAPI.OAuthHandler(handler);
+	} else {
+		_options.authHandler = handler;
+	}
+};
+/**
+ * Default Auth handler object for all WPAPI instances
+ *
+ * These methods may be extended or replaced on an instance-by-instance basis
+ *
+ * @static
+ * @property handler
+ * @type {Object}
+ */
+WPAPI.OAuthHandler = oauthHandler;
+Object.freeze( WPAPI.OAuthHandler );
 
 /**
  * Convenience method for making a new WPAPI instance
